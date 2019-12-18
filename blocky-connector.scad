@@ -6,13 +6,13 @@ altitude = -31.7;
 // dimension in mm.
 member_w = 2.38125; // 3/32"
 peg_d = 0.3;
-leg_off = member_w*2;
-leg_l = 10;
-cutoff= 2;
+leg_off = member_w*1.2;
+leg_l = 6;
+cutoff= 0.5;
 center_hole_d = 2; // 2mm for eyehook?
-truncation = 0.6; // truncation from apex
+truncation = 1; // truncation from apex
 
-module member_slot_neg() {
+module leg_neg() {
     difference() {
         intersection() {
             translate([-member_w/2,0,0])
@@ -26,12 +26,8 @@ module member_slot_neg() {
 }
 
 module leg(length,off,back) {
-    difference() {
-        translate([-member_w,-back,-member_w/2])
-        cube(size=[member_w*2,length+off+back,member_w*1.5]);
-        translate([0,off,0])
-        member_slot_neg();
-    }
+    translate([-member_w,-back,-20])
+    cube(size=[member_w*2,length+off+back,member_w+20]);
 }
 
 floor = ((leg_l +leg_off) * sin(altitude)) - (member_w/2 * cos(altitude));
@@ -56,15 +52,24 @@ module pyramid() {
 
 
 module connector(azimuth,altitude) {
-    for (az = [0 : azimuth : 359] ) {
-        intersection() {
-            pyramid();
+    difference() {
+        for (az = [0 : azimuth : 359] ) {
+            intersection() {
+                pyramid();
+                rotate(az)
+                rotate(altitude,v=[1,0,0])
+                leg(leg_l,leg_off,20);
+                rotate(az)
+                leg(leg_l,leg_off,0);
+            }
+        }
+        for (az = [0 : azimuth : 359] ) {
             rotate(az)
             rotate(altitude,v=[1,0,0])
-            leg(leg_l,leg_off,20);
+            translate([0,leg_off,0])
+            leg_neg();
         }
     }
 }
-
 
 connector(azimuth,altitude);
