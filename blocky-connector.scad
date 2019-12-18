@@ -8,7 +8,8 @@ member_w = 2.38125; // 3/32"
 peg_d = 0.3;
 leg_off = member_w*2;
 leg_l = 10;
-center_hole_d = 1.5; // 1.5mm for eyehook?
+cutoff= 2;
+center_hole_d = 2; // 2mm for eyehook?
 truncation = 0.6; // truncation from apex
 
 module member_slot_neg() {
@@ -33,6 +34,8 @@ module leg(length,off,back) {
     }
 }
 
+floor = ((leg_l +leg_off) * sin(altitude)) - (member_w/2 * cos(altitude));
+
 module pyramid() {
     intersection() {
         intersection_for (az = [0 : azimuth : 359] ) {
@@ -46,8 +49,11 @@ module pyramid() {
             cube(size=[200,200,member_w+100-truncation]);
             cylinder(d=center_hole_d,center=true,h=200, $fn=20);
         }
+        translate([-100,-100,floor+cutoff])
+        cube([200,200,200]);
     }
 }
+
 
 module connector(azimuth,altitude) {
     for (az = [0 : azimuth : 359] ) {
