@@ -8,6 +8,8 @@ member_w = 2.38125; // 3/32"
 peg_d = 0.3;
 leg_off = member_w*2;
 leg_l = 10;
+center_hole_d = 1.5; // 1.5mm for eyehook?
+truncation = 0.6; // truncation from apex
 
 module member_slot_neg() {
     difference() {
@@ -19,9 +21,6 @@ module member_slot_neg() {
             translate([-member_w,0,-50])
             cube(size=[member_w*2,100,100]);
         }
-        for (y = [4, 6]) for (xf = [1, -1])
-            translate([xf*member_w/2,y,0])
-            cylinder(h=member_w*5,d=peg_d,center=true,$fn=20);
     }
 }
 
@@ -35,11 +34,18 @@ module leg(length,off,back) {
 }
 
 module pyramid() {
-    intersection_for (az = [0 : azimuth : 359] ) {
-        rotate(az)
-        rotate(altitude,v=[1,0,0])
-        translate([-50,-100,-100])
-        cube(size=[100,200,member_w+100]);
+    intersection() {
+        intersection_for (az = [0 : azimuth : 359] ) {
+            rotate(az)
+            rotate(altitude,v=[1,0,0])
+            translate([-50,-100,-100])
+            cube(size=[100,200,member_w+100]);
+        }
+        difference() {
+            translate([-100,-100,-100])
+            cube(size=[200,200,member_w+100-truncation]);
+            cylinder(d=center_hole_d,center=true,h=200, $fn=20);
+        }
     }
 }
 
