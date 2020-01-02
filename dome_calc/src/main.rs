@@ -1,4 +1,5 @@
 extern crate cairo;
+extern crate cgmath;
 
 use cairo::{ SvgSurface, Format, Context };
 
@@ -14,7 +15,7 @@ const TRI_H : f64 = SQRT_3/2.0; // height of triangle with unit edge
 const SVG_WIDTH : f64 = 200.0;
 const SVG_HEIGHT : f64 = 200.0;
 
-struct Point { x : f64, y : f64, z : f64 }
+type Point = cgmath::Point3<f64>;
 
 struct Edge { a : usize, b : usize }
 
@@ -24,15 +25,13 @@ struct Panel {
     e : Vec<Edge>
 }
 
-impl Point {
-    fn project_to_radius( &mut self, r : f64 ) {
-        let origin = Point{ x: 0.0, y : 0.0, z : 0.0 };
-        // Check for point at origin?
-        let factor = r / distance( &origin, self );
-        self.x *= factor;
-        self.y *= factor;
-        self.z *= factor;
-    }
+fn project_to_radius( p : &mut Point, r : f64 ) {
+    let origin = Point{ x: 0.0, y : 0.0, z : 0.0 };
+    // Check for point at origin?
+    let factor = r / distance( &origin, p );
+    p.x *= factor;
+    p.y *= factor;
+    p.z *= factor;
 }
 
 fn distance( a : &Point, b : &Point ) -> f64 {
@@ -88,7 +87,7 @@ fn main() {
         context.move_to(SVG_WIDTH/2.0 + a.x*100.0, SVG_HEIGHT/2.0 + a.y*100.0);
         context.line_to(SVG_WIDTH/2.0 + b.x*100.0, SVG_HEIGHT/2.0 + b.y*100.0);
     }
-    for p in &mut panel.p { p.project_to_radius(ICO_0R); }
+    for p in &mut panel.p { project_to_radius(p,ICO_0R); }
     for e in panel.e {
         let (a,b) = (&panel.p[e.a], &panel.p[e.b]);
         context.move_to(SVG_WIDTH/2.0 + a.x*100.0, SVG_HEIGHT/2.0 + a.y*100.0);
