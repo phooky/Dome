@@ -2,6 +2,13 @@ extern crate cairo;
 
 use cairo::{ SvgSurface, Format, Context };
 
+
+// Icosahedron geometry
+const ICO_0R : f64 = 0.9510565; // circum-sphere
+const ICO_1R : f64 = 0.8091699; // mid-sphere
+const ICO_2R : f64 = 0.7557613; // in-sphere
+
+
 struct Point { x : f64, y : f64, z : f64 }
 
 struct Edge { a : usize, b : usize }
@@ -41,7 +48,7 @@ impl Panel {
                 panel.p.push( Point{ 
                     x : leftmost + j as f64,
                     y : i as f64,
-                    z : 1.0 } );
+                    z : ICO_2R } );
             }
         }
         for i in 0..freq+1 {
@@ -68,8 +75,8 @@ fn main() {
     context.set_source_rgb(0.0,0.0,0.0);
     for e in panel.e {
         let (a,b) = (&panel.p[e.a], &panel.p[e.b]);
-        context.move_to(300.0 + a.x*30.0,a.y*30.0);
-        context.line_to(300.0 + b.x*30.0,b.y*30.0);
+        context.move_to(300.0 + a.x*30.0,300.0+a.y*30.0);
+        context.line_to(300.0 + b.x*30.0,300.0+b.y*30.0);
     }
     context.stroke();
     println!("Hello, world!");
