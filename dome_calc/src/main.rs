@@ -54,7 +54,11 @@ impl Panel {
         for i in 0..freq+1 { // row
             let leftmost = x0 - (i as f64)*edgelen/2.0;
             for j in 0..i+1 { // point in row
-                let anno = if j <= freq/2 { Some(1) } else { None };
+                let anno = if j <= i/2 { 
+                    if (2*i-j) <= freq {
+                        Some(1) 
+                    } else { None }
+                } else { None };
                 use PointType::*;
                 panel.p.push( Point{ t : if j == 0 || j == i {
                     if i == 0 || i == freq { Corner } else { Edge }
@@ -99,15 +103,15 @@ impl Panel {
         for p in &self.p {
             let pp = m.transform_point(p.p);
             use PointType::*;
-            context.arc(pp.x, pp.y, 1.2, 0.0, 2.0*PI);
-            context.fill();
             match p.annotation {
                 None => {},
                 Some(x) => {
-                    context.set_source_rgb(0.0,0.0,0.8);
+                    context.set_source_rgb(1.0,1.0,1.0);
                 },
             }
 
+            context.arc(pp.x, pp.y, 1.2, 0.0, 2.0*PI);
+            context.fill();
             match p.t {
                 Ordinary => { },
                 Corner => {
@@ -133,8 +137,8 @@ impl Panel {
 fn main() {
     let surface =  SvgSurface::new(SVG_WIDTH,SVG_HEIGHT,Some("test.svg")).expect("Couldn't create svgsurface");
     let context = Context::new(&surface);
-    let mut panel = Panel::build(4);
-    context.set_source_rgb(0.8,0.5,0.5);
+    let mut panel = Panel::build(6);
+    context.set_source_rgb(0.6,0.6,0.6);
     context.paint();
     context.set_source_rgb(0.0,0.0,0.0);
     let rotm = Matrix4::from_angle_x(Rad(PI/4.0)) * Matrix4::from_angle_z(Rad(PI/8.4));
