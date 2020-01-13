@@ -51,12 +51,15 @@ impl Panel {
         let edgelen = 1.0 / freq as f64;
 
         // Create points on panel
+        let mut next_anno = 0;
         for i in 0..freq+1 { // row
             let leftmost = x0 - (i as f64)*edgelen/2.0;
             for j in 0..i+1 { // point in row
                 let anno = if j <= i/2 { 
                     if (2*i-j) <= freq {
-                        Some(1) 
+                        let a = next_anno;
+                        next_anno += 1;
+                        Some(a) 
                     } else { None }
                 } else { None };
                 use PointType::*;
@@ -90,6 +93,8 @@ impl Panel {
 
     fn render(&self, context : &Context, m : &Matrix4<f64>) {
         context.save();
+        context.select_font_face("serif",cairo::FontSlant::Italic,cairo::FontWeight::Normal);
+        context.set_font_size(12.0);
         context.set_line_cap(cairo::LineCap::Round);
         context.set_line_width(1.0);
         for e in &self.e {
@@ -127,6 +132,15 @@ impl Panel {
                 },
             }
             context.set_source_rgb(0.0,0.0,0.0);
+            context.move_to(pp.x-12.0,pp.y-5.0);
+            match p.annotation {
+                Some(a) => {
+                    let mut tmp = [0; 4];
+                    let txt = ((0x61 + a) as char).encode_utf8(&mut tmp);
+                    context.show_text( txt );
+                },
+                None => {},
+            }
         }
         context.stroke();
         context.restore();
