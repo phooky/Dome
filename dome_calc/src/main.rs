@@ -42,7 +42,13 @@ struct Panel {
 fn to_alt_azim(v : &Vector3<f64>) -> (f64,f64) {
     let altitude = v.z.asin();
     let azimuth = v.y.atan2(v.x);
-    (azimuth, altitude)
+    (altitude, azimuth)
+}
+
+fn adjust_azimuth( (altitude, azimuth) : (f64, f64), rad : f64) -> (f64, f64) {
+    let mut azimuth = azimuth + rad;
+    if azimuth > PI { azimuth -= 2.0*PI; }
+    (altitude, azimuth)
 }
 
 impl Panel {
@@ -97,8 +103,10 @@ impl Panel {
     }
 
     fn star(&self, idx : usize) -> Vec<(f64,f64)> {
+        use PointType::*;
         let mut cv = Vec::new();
         let p = &self.p[idx].p;
+        let t = &self.p[idx].t;
         // p is a unit vector; we want a matrix that rotates is onto
         // the Z axis.
         let rot_mat = Matrix3::look_at(p.to_vec(),Vector3::unit_z());
@@ -109,12 +117,33 @@ impl Panel {
             let other = 
                 if e.a == idx { &self.p[e.b].p } else { &self.p[e.a].p };
             let v = other - p;
-            cv.push(to_alt_azim(&(rot_mat*v)));
+            let aa = to_alt_azim(&(rot_mat*v));
+            cv.push(aa);
+            // Add rotated replicas for corners and edges
+            match t {
+                Ordinary => {},
+                Edge => { 
+                    println!("Adding mirror around {}", cv[0].1);
+                    // x' = -(x-a)+a = 2a-x
+                    let mut new_azim = 2.0*cv[0].1-aa.1;
+                    if new_azim > PI { new_azim -= 2.0*PI; }
+                    if new_azim < -PI { new_azim += 2.0*PI; }
+                    cv.push((aa.0,new_azim)); },
+                Corner => { for i in 1..5 {
+                    println!("Adding corner {}",i as f64*PI*(2.0/5.0));
+                    cv.push(adjust_azimuth(aa,i as f64*PI*(2.0/5.0))); } },
+            }
         }
+
         use std::cmp::Ordering::Equal;
-        cv.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(a.1.partial_cmp(&b.1).unwrap_or(Equal)));
-        //cv.sort();
-        cv
+        cv.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(a.0.partial_cmp(&b.0).unwrap_or(Equal)));
+        let mut deduped = Vec::new();
+        let mut last_azim = -100.0;
+        for (alt, azim) in cv {
+            if (azim-last_azim).abs() > 0.0000001 { deduped.push( (alt,azim) ); }
+            last_azim = azim;
+        }
+        deduped
     }
 
     fn render(&self, context : &Context, m : &Matrix4<f64>) {
@@ -190,7 +219,7 @@ fn main() {
     for p in &mut panel.p { p.p = Point3::from_vec(p.p.to_vec().normalize_to(ICO_0R)); }
     let t = scrm * Matrix4::from_translation( Vector3 { x:0.0, y:0.3, z:0.0 }) * rotm;
     panel.render(&context, &t);
-    for v in panel.star(4) {
+    for v in panel.star(1) {
         println!("V {} {} ",v.0,v.1);
     }
 }
