@@ -1,9 +1,9 @@
 extern crate cairo;
 extern crate cgmath;
 
-use cairo::{ SvgSurface, Format, Context };
+use cairo::{ SvgSurface, Context };
 use cgmath::prelude::*;
-use cgmath::{ Point3, Vector3, Matrix4, Rad };
+use cgmath::{ Point3, Vector3, Matrix3, Matrix4, Rad };
 
 // Icosahedron geometry, all relative to edge length
 const ICO_0R : f64 = 0.9510565; // circum-sphere
@@ -35,16 +35,21 @@ struct Edge {
 }
 
 struct Panel {
-    n : usize,
     p : Vec<Point>,
     e : Vec<Edge>
+}
+
+fn to_alt_azim(v : &Vector3<f64>) -> (f64,f64) {
+    let altitude = v.z.asin();
+    let azimuth = v.y.atan2(v.x);
+    (azimuth, altitude)
 }
 
 impl Panel {
     fn build(freq : usize) -> Panel {
         // frequency 1 is a triangle; freq 2 is edges broken in one place, etc.
-        let n = (freq+1)*(freq+2) / 2;
-        let mut panel = Panel{ n : n, p : Vec::new(), e : Vec::new() };
+        // let n = (freq+1)*(freq+2) / 2;
+        let mut panel = Panel{ p : Vec::new(), e : Vec::new() };
         let x0 : f64 = 0.0;
         let y0 : f64 = -(TRI_H*2.0/3.0);
         let rowht = TRI_H / freq as f64;
@@ -91,6 +96,27 @@ impl Panel {
         panel
     }
 
+    fn star(&self, idx : usize) -> Vec<(f64,f64)> {
+        let mut cv = Vec::new();
+        let p = &self.p[idx].p;
+        // p is a unit vector; we want a matrix that rotates is onto
+        // the Z axis.
+        let rot_mat = Matrix3::look_at(p.to_vec(),Vector3::unit_z());
+
+        // Find all edges
+        for e in &self.e {
+            if e.a != idx && e.b != idx { continue; }
+            let other = 
+                if e.a == idx { &self.p[e.b].p } else { &self.p[e.a].p };
+            let v = other - p;
+            cv.push(to_alt_azim(&(rot_mat*v)));
+        }
+        use std::cmp::Ordering::Equal;
+        cv.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(a.1.partial_cmp(&b.1).unwrap_or(Equal)));
+        //cv.sort();
+        cv
+    }
+
     fn render(&self, context : &Context, m : &Matrix4<f64>) {
         context.save();
         context.select_font_face("serif",cairo::FontSlant::Italic,cairo::FontWeight::Normal);
@@ -110,7 +136,7 @@ impl Panel {
             use PointType::*;
             match p.annotation {
                 None => {},
-                Some(x) => {
+                Some(_) => {
                     context.set_source_rgb(1.0,1.0,1.0);
                 },
             }
@@ -164,4 +190,7 @@ fn main() {
     for p in &mut panel.p { p.p = Point3::from_vec(p.p.to_vec().normalize_to(ICO_0R)); }
     let t = scrm * Matrix4::from_translation( Vector3 { x:0.0, y:0.3, z:0.0 }) * rotm;
     panel.render(&context, &t);
+    for v in panel.star(4) {
+        println!("V {} {} ",v.0,v.1);
+    }
 }
