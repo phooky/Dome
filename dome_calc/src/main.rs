@@ -123,14 +123,14 @@ impl Panel {
             match t {
                 Ordinary => {},
                 Edge => { 
-                    println!("Adding mirror around {}", cv[0].1);
+                    //println!("Adding mirror around {}", cv[0].1);
                     // x' = -(x-a)+a = 2a-x
                     let mut new_azim = 2.0*cv[0].1-aa.1;
                     if new_azim > PI { new_azim -= 2.0*PI; }
                     if new_azim < -PI { new_azim += 2.0*PI; }
                     cv.push((aa.0,new_azim)); },
                 Corner => { for i in 1..5 {
-                    println!("Adding corner {}",i as f64*PI*(2.0/5.0));
+                    //println!("Adding corner {}",i as f64*PI*(2.0/5.0));
                     cv.push(adjust_azimuth(aa,i as f64*PI*(2.0/5.0))); } },
             }
         }
@@ -206,7 +206,7 @@ impl Panel {
 fn main() {
     let surface =  SvgSurface::new(SVG_WIDTH,SVG_HEIGHT,Some("test.svg")).expect("Couldn't create svgsurface");
     let context = Context::new(&surface);
-    let mut panel = Panel::build(6);
+    let mut panel = Panel::build(2);
     context.set_source_rgb(0.6,0.6,0.6);
     context.paint();
     context.set_source_rgb(0.0,0.0,0.0);
@@ -219,7 +219,17 @@ fn main() {
     for p in &mut panel.p { p.p = Point3::from_vec(p.p.to_vec().normalize_to(ICO_0R)); }
     let t = scrm * Matrix4::from_translation( Vector3 { x:0.0, y:0.3, z:0.0 }) * rotm;
     panel.render(&context, &t);
-    for v in panel.star(1) {
-        println!("V {} {} ",v.0,v.1);
+    let mut stars = Vec::new();
+    for i in 0..2 {
+        let data = panel.star(i).iter().map(|x| format!("[{}, {}]",x.0,x.1))
+            .collect::<Vec<_>>().join(", ");
+        stars.push( format!("[{}]", data) );
     }
+    println!(r#"
+star=0;
+use <vertex-connector-script.scad>
+stars=[{}];
+connector(stars[star]) balsa_leg();
+"#, stars.join(", "));
+
 }
