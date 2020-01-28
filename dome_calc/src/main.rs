@@ -1,9 +1,12 @@
 extern crate cairo;
 extern crate cgmath;
+extern crate clap;
 
 use cairo::{ SvgSurface, Context };
 use cgmath::prelude::*;
 use cgmath::{ Point3, Vector3, Matrix3, Matrix4, Rad };
+use clap::{ Arg, App };
+use std::io::prelude::*;
 
 // Icosahedron geometry, all relative to edge length
 const ICO_0R : f64 = 0.9510565; // circum-sphere
@@ -107,7 +110,7 @@ impl Panel {
         let mut cv = Vec::new();
         let p = &self.p[idx].p;
         let t = &self.p[idx].t;
-        // p is a unit vector; we want a matrix that rotates is onto
+        // p is a unit vector; we want a matrix that rotates it onto
         // the Z axis.
         let rot_mat = Matrix3::look_at(p.to_vec(),Vector3::unit_z());
 
@@ -116,7 +119,7 @@ impl Panel {
             if e.a != idx && e.b != idx { continue; }
             let other = 
                 if e.a == idx { &self.p[e.b].p } else { &self.p[e.a].p };
-            let v = other - p;
+            let v = (other - p).normalize();
             let aa = to_alt_azim(&(rot_mat*v));
             cv.push(aa);
             // Add rotated replicas for corners and edges
@@ -204,7 +207,31 @@ impl Panel {
 }
 
 fn main() {
-    let surface =  SvgSurface::new(SVG_WIDTH,SVG_HEIGHT,Some("test.svg")).expect("Couldn't create svgsurface");
+    let args = App::new("Geodesic dome generator")
+        .arg(Arg::with_name("freq")
+             .short("f")
+             .default_value("1")
+             .takes_value(true))
+        .arg(Arg::with_name("offset")
+             .default_value("4.5")
+             .takes_value(true))
+        .arg(Arg::with_name("scale")
+             .short("s")
+             .default_value("1.0")
+             .takes_value(true))
+        .arg(Arg::with_name("base")
+             .short("b")
+             .default_value("geodesic")
+             .takes_value(true))
+        .get_matches();
+    let frequency : usize = args.value_of("freq").unwrap().parse().unwrap();
+    let base = args.value_of("base").unwrap();
+    let scale : f64 = args.value_of("scale").unwrap().parse().unwrap();
+    let offset : f64 = args.value_of("offset").unwrap().parse().unwrap();
+
+
+    let svgpath = format!("{}-f{}.svg",base,frequency);
+    let surface =  SvgSurface::new(SVG_WIDTH,SVG_HEIGHT,Some(svgpath)).expect("Couldn't create svgsurface");
     let context = Context::new(&surface);
     let mut panel = Panel::build(2);
     context.set_source_rgb(0.6,0.6,0.6);
@@ -225,11 +252,16 @@ fn main() {
             .collect::<Vec<_>>().join(", ");
         stars.push( format!("[{}]", data) );
     }
-    println!(r#"
+    let scadpath = format!("{}-f{}-vertices.scad",base,frequency);
+    let mut scadf = std::fs::File::create(scadpath).unwrap();
+    scadf.write_all(format!(r#"
 star=0;
 use <vertex-connector-script.scad>
 stars=[{}];
 connector(stars[star]) balsa_leg();
-"#, stars.join(", "));
-
+"#, stars.join(", ")).as_bytes());
+    for e in panel.e {
+        let d = panel.p[e.a].p.distance(panel.p[e.b].p);
+        println!("M {}",d*scale - 2.0*offset);
+    }
 }

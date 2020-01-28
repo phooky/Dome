@@ -9,4 +9,5 @@ edition = "2018"
 [dependencies]
 cairo-rs = { version = "0.8.0", features = ["svg"] }
 cgmath = "0.17.0"
+clap = "2.33.0"
 
