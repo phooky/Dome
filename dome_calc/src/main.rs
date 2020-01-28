@@ -233,7 +233,7 @@ fn main() {
     let svgpath = format!("{}-f{}.svg",base,frequency);
     let surface =  SvgSurface::new(SVG_WIDTH,SVG_HEIGHT,Some(svgpath)).expect("Couldn't create svgsurface");
     let context = Context::new(&surface);
-    let mut panel = Panel::build(2);
+    let mut panel = Panel::build(frequency);
     context.set_source_rgb(0.6,0.6,0.6);
     context.paint();
     context.set_source_rgb(0.0,0.0,0.0);
