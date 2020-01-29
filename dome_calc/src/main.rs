@@ -258,7 +258,7 @@ fn main() {
 star=0;
 use <vertex-connector-script.scad>
 stars=[{}];
-connector(stars[star]) balsa_leg();
+emboss_text(chr(97+star)) connector(stars[star]) balsa_leg();
 "#, stars.join(", ")).as_bytes());
     for e in panel.e {
         let d = panel.p[e.a].p.distance(panel.p[e.b].p);

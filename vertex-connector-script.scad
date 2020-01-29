@@ -22,6 +22,8 @@ module vertex_hull(aas) {
 function depth_for_aa(aa) = leg_len * sin(-aa[0] * RAD) + leg_w * cos(-aa[0]*RAD);
 
 module connector(aas) {
+    d = max([for (x = aas) depth_for_aa(x) ]);
+    translate([0,0,d])
     intersection() {
         translate([0,0,-0.00001]) vertex_hull(aas);
         for (aa = aas) {
@@ -33,8 +35,6 @@ module connector(aas) {
             cube(size=[SECSZ,SECSZ,SECSZ],center=true);
         } }
         if (fill_depth) {
-            d = max([for (x = aas) depth_for_aa(x) ]);
-            echo("D is",d);
             translate([0,0,-d/2]) cube(size=[SECSZ,SECSZ,d],center=true);
         }
     }
@@ -50,5 +50,18 @@ module balsa_leg() {
         translate([leg_off,-member_w/2,-member_w]) cube(size=[leg_len,member_w,member_w+2]);
     }
 }
-            
-connector( aal ) balsa_leg();
+
+module emboss_text(txt) {
+    difference() { 
+        children();
+        rotate([0,180,0])
+        translate([0,0,-0.2])
+        linear_extrude(0.3) {
+            text(txt, size=leg_w, font="Cabin", halign="center", valign="center");
+            translate([leg_w,0,0]) square([leg_w,0.2],center=true);
+            translate([-leg_w,0,0]) square([leg_w,0.2],center=true);
+        }
+    }
+}
+//connector( aal ) balsa_leg();
+emboss_text("1") connector( aal ) balsa_leg();
